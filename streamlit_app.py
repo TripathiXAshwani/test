@@ -4,6 +4,15 @@ import pandas as pd
 import streamlit as st
 import seaborn as sns
 
+
+
+
+
+
+
+
+
+
 # Load and display the CSV file
 st.title("🎈 My new app")
 st.write("Upload a CSV file and draw graphs!")
@@ -18,7 +27,9 @@ if uploaded_file is not None:
 
     # Automatically detect columns (you can modify this part)
     year_col = 'year' if 'year' in data.columns else None
-    product_col = 'product' if 'product' in data.columns or 'product_name' in data.columns else None
+    product_col = 'product' if 'product' in data.columns else None
+    if product_col is None:
+        product_col=  'product_name' if 'product_name' in data.columns else None
     price_col = 'price' if 'price' in data.columns else None
     quantity_col = 'quantity' if 'quantity' in data.columns or 'Quantity' in data.columns else None
     brand_col = 'brand' if 'brand' in data.columns or 'brand_name' in data.columns else None
@@ -92,6 +103,65 @@ if uploaded_file is not None:
                     title="Complaints by Product", color=product_complaints[complaints_col],
                     color_continuous_scale='Blues')
         st.plotly_chart(fig)
+    
+    if brand_col and quantity_col:
+        brand_quantity = data.groupby(brand_col)[quantity_col].sum().reset_index()
+        fig = px.bar(brand_quantity, x=brand_col, y=quantity_col, title="Total Quantity Sold per Brand", 
+                    labels={brand_col: 'Brand', quantity_col: 'Quantity Sold'},
+                    color=quantity_col,
+                    color_continuous_scale='Viridis')
+        st.plotly_chart(fig)
+    
+    if product_col and quantity_col:
+        top_products = data.groupby(product_col)[quantity_col].sum().reset_index().sort_values(by=quantity_col, ascending=False).head(100)
+        
+        # Use a color scale for better visualization
+        fig = px.bar(top_products, 
+                    x=quantity_col, 
+                    y=product_col, 
+                    orientation='h', 
+                    title="Top 100 Products by Quantity Sold", 
+                    color=quantity_col,  # Apply color based on quantity
+                    color_continuous_scale='Viridis')  # Choose a color scale (e.g., 'Viridis', 'Cividis', 'Plasma', etc.)
+        
+        st.plotly_chart(fig)
+
+    
+    if product_col and quantity_col and price_col:
+        data['revenue'] = data[price_col] * data[quantity_col]
+        product_performance = data.groupby(product_col).agg(
+            total_quantity=(quantity_col, 'sum'),
+            total_revenue=('revenue', 'sum')
+        ).reset_index()
+        fig = px.scatter(product_performance, x='total_quantity', y='total_revenue', size='total_revenue', 
+                        color='total_quantity', hover_name=product_col, title="Product Performance by Revenue and Quantity")
+        st.plotly_chart(fig)
+
+    # 4. Material Analysis
+    # Donut chart for share of different materials used (need to fix)
+    if material_col and quantity_col:
+        material_sales = data.groupby(material_col)[quantity_col].sum().reset_index()
+        fig = px.pie(material_sales, names=material_col, values=quantity_col, title="Material Share", 
+                     hole=0.3)
+        st.plotly_chart(fig)
+
+    # 5. Complaints Insights
+    # Heatmap for number of complaints per brand and product
+    if complaints_col and brand_col and product_col:
+        complaints_data = data.groupby([brand_col, product_col])[complaints_col].sum().reset_index()
+        complaints_data_pivot = complaints_data.pivot(index=product_col, columns=brand_col, values=complaints_col)
+        fig = sns.heatmap(complaints_data_pivot, annot=True, cmap="Blues", cbar_kws={'label': 'Complaints'})
+        st.pyplot(fig)
+
+    # 6. Category Analysis
+    # Tree map for revenue distribution by categories
+    if category_col and quantity_col and price_col:
+        data['revenue'] = data[price_col] * data[quantity_col]
+        category_revenue = data.groupby(category_col)['revenue'].sum().reset_index()
+        fig = px.treemap(category_revenue, path=[category_col], values='revenue', title="Revenue Distribution by Categories")
+        st.plotly_chart(fig)
+
+    
 
     # Brand vs Color (Pie chart, only non-zero sales)
     # if brand_col and color_col:
@@ -196,3 +266,7 @@ if uploaded_file is not None:
 
 else:
     st.write("Upload a CSV file and draw graphs!")
+
+
+# if __name__ == "__main__":
+#     main()
