@@ -60,6 +60,17 @@ def main():
             st.write(" year_col-",year_col, " month_col-",month_col," category_col-",category_col," product_col-",product_col," price_col-",price_col," quantity_col-",quantity_col)
             st.write("complaint_call-",complaints_col," month_col-",month_col)
             st.dataframe(data.head())
+            total_inventory=data['quantity'].sum()
+
+            total_product_sold=0
+            unique_brand=data['brand'].count()
+            total_images=0
+            total_files=0
+            total_invoices_generated=0
+            st.write(" unique_brands-",unique_brand)
+            st.write(" total_inventory", total_inventory)
+
+
             
             # Year vs Total Sale (Line plot)
             # if year_col and quantity_col:
@@ -85,7 +96,7 @@ def main():
             # Year vs Product Price (Line plot)
             if year_col and price_col:
                 year_price = data.groupby(year_col)[price_col].mean().reset_index()
-                fig = px.line(year_price, x=year_col, y=price_col, title="Year vs Product Price",
+                fig = px.line(year_price, x=year_col, y=price_col, title="Year vs  Average Product Price",
                             labels={year_col: 'Year', price_col: 'Average Price'})
                 fig.update_traces(line_color='red')
                 st.plotly_chart(fig)
@@ -100,7 +111,7 @@ def main():
             # Month vs Top Selling Products (Bar chart)
             if month_col and product_col and quantity_col:
                 top_monthly_sales = data.groupby([month_col, product_col])[quantity_col].sum().reset_index()
-                top_monthly_sales = top_monthly_sales.sort_values(by=quantity_col, ascending=False).head(10)
+                top_monthly_sales = top_monthly_sales.sort_values(by=quantity_col, ascending=False).head(20)
                 fig = px.bar(top_monthly_sales, x=product_col, y=quantity_col, color=product_col,
                             title="Month vs Top Selling Products", labels={product_col: 'Product', quantity_col: 'Sales'},
                             color_continuous_scale='Viridis')
