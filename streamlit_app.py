@@ -9,7 +9,7 @@ import seaborn as sns
 # Load and display the CSV file
 
 def main():
-    st.title("🎈 My new app")
+    st.title("🎈My Dashboard")
     st.write("Upload a CSV file and draw graphs!")
 
     # File uploader
@@ -20,9 +20,18 @@ def main():
         with st.spinner("Reading data, Wait a sec!!"):
             st.write("Preview of the data:")
             st.dataframe(data.head())  # Display the first 5 rows of the data
-
+            
             # Automatically detect columns (you can modify this part)
-            year_col = 'year' if 'year' in data.columns else None
+            
+            created_at_col= 'created_at' if 'created_at' in data.columns else None
+            if created_at_col:
+                data['created_at'] = pd.to_datetime(data['created_at'], errors='coerce', utc=True)
+                # Extract year and month
+                data['year'] = data['created_at'].dt.year
+                data['month'] = data['created_at'].dt.month
+            year_col= 'year' if 'year' in data.columns else None
+            month_col ='month' if 'month' in data.columns else None
+
             product_col = 'product' if 'product' in data.columns else None
             if product_col is None:
                 product_col=  'product_name' if 'product_name' in data.columns else None
@@ -33,7 +42,7 @@ def main():
             if color_col is None:
                 color_col= 'primary_color' if 'primary_color' in data.columns else None
             complaints_col = 'complaints' if 'complaints' in data.columns else None
-            month_col = 'month' if 'month' in data.columns else None
+            
             material_col= 'material' if 'material' in data.columns else None
             if material_col is None:
                 material_col= 'primary_material' if 'primary_material' in data.columns else None
@@ -42,17 +51,35 @@ def main():
             if category_col is None:
                category_col = 'category' if 'category' in data.columns else None
             
+            
+            
 
 
             # Define your analysis logic
             st.write(f"""{category_col}, {type(category_col)}""")
             st.write(" year_col-",year_col, " month_col-",month_col," category_col-",category_col," product_col-",product_col," price_col-",price_col," quantity_col-",quantity_col)
             st.write("complaint_call-",complaints_col," month_col-",month_col)
+            st.dataframe(data.head())
+            
             # Year vs Total Sale (Line plot)
-            if year_col and quantity_col:
-                yearly_sales = data.groupby(year_col)[quantity_col].sum().reset_index()
-                fig = px.line(yearly_sales, x=year_col, y=quantity_col, title="Year vs Total Sales", 
-                            labels={year_col: 'Year', quantity_col: 'Total Sales'})
+            # if year_col and quantity_col:
+            #     yearly_sales = data.groupby(year_col)[quantity_col].sum().reset_index()
+            #     fig = px.line(yearly_sales, x=year_col, y=quantity_col, title="Year vs Total Sales", 
+            #                 labels={year_col: 'Year', quantity_col: 'Total Sales'})
+            #     st.plotly_chart(fig)
+            if 'year' in data.columns and 'quantity' in data.columns:
+                # Group by year and calculate total sales
+                yearly_sales = data.groupby('year')['quantity'].sum().reset_index()
+                st.write("yearly_sales ---")
+                st.write(yearly_sales)
+                # Create the line plot
+                fig = px.line(
+                    yearly_sales,
+                    x='year', 
+                    y='quantity',
+                    title="Year vs Total Sales", 
+                    labels={'year': 'Year', 'quantity': 'Total Sales'}
+                )
                 st.plotly_chart(fig)
 
             # Year vs Product Price (Line plot)
@@ -60,6 +87,7 @@ def main():
                 year_price = data.groupby(year_col)[price_col].mean().reset_index()
                 fig = px.line(year_price, x=year_col, y=price_col, title="Year vs Product Price",
                             labels={year_col: 'Year', price_col: 'Average Price'})
+                fig.update_traces(line_color='red')
                 st.plotly_chart(fig)
 
             # Month vs Product Sale (Line plot)
@@ -154,7 +182,7 @@ def main():
             if category_col and quantity_col and price_col:
                 data['revenue'] = data[price_col] * data[quantity_col]
                 category_revenue = data.groupby(category_col)['revenue'].sum().reset_index()
-                fig = px.treemap(category_revenue, path=[category_col], values='revenue', title="Revenue Distribution by Categoriess"),parent = None, id= None
+                fig = px.treemap(category_revenue, path=[category_col], values='revenue', title="Revenue Distribution by Categoriess")
                 st.plotly_chart(fig)
 
             
@@ -289,39 +317,6 @@ def main():
                             # Show the pie chart in the corresponding tab with a unique key
                             st.plotly_chart(fig, key=f"pie_chart_{i}")
 
-
-
-            # if brand_col and category_col and quantity_col:
-            #     # unique_brands = list(data[brand_col].astype(str).unique())
-            #     unique_category=list(data[category_col].astype(str).unique())
-            #     tab_layout = st.tabs(unique_category)
-
-            #     for i, category in enumerate(unique_category):
-            #         with tab_layout[i]:
-            #             # Filter data for the current brand
-            #             # brand_data = data[data[brand_col] == brand]
-            #             category_data=data[data[category_col]==category]
-
-            #             category_brand_distribution= (
-            #                 category_data[brand_col]
-            #                 .value_counts(normalize=True)
-            #                 .reset_index(name='percentage')
-            #             )
-            #             if category_brand_distribution.empty:
-            #                 st.warning(f"No brand data found for category:{category}")
-            #                 continue
-
-
-            #             # Create pie chart, using the index as names
-            #             fig = px.pie(
-            #                 # brand_color_distribution,
-            #                 category_brand_distribution,
-            #                 names=category_brand_distribution.index,  # Use the index directly here
-            #                 values='percentage',
-            #                 title=f"Brand Distribution for {category}",
-            #                 labels={'index': 'Color'},
-            #             )
-            #             st.plotly_chart(fig)
 
 
     else:
